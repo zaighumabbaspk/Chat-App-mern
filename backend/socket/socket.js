@@ -10,6 +10,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:5173", // for local frontend development
+      "http://localhost:3000",
       "https://chat-app-mern-gdsw.onrender.com" // deployed frontend
     ],
     methods: ["GET", "POST"],

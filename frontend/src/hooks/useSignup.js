@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext"; // Import Auth Context
+import { apiRequest } from "../../Utils/api";
 
 const useSignup = () => {
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ const useSignup = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/signup", {
+      const data = await apiRequest("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -37,11 +38,6 @@ const useSignup = () => {
           gender,
         }),
       });
-
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
 
       // ✅ Save user to localStorage
       localStorage.setItem("chat-user", JSON.stringify(data));
@@ -55,7 +51,7 @@ const useSignup = () => {
       // ✅ Redirect to home page
       navigate("/");
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error instanceof Error ? error.message : "Signup failed.");
     } finally {
       setLoading(false);
     }
