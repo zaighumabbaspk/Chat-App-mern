@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useConversation from "../../zustand/useConversation";
 import toast from "react-hot-toast";
+import { apiRequest } from "../../Utils/api";
 
 const useSendMessage = () => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +10,7 @@ const useSendMessage = () => {
   const sendMessage = async (message) => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const data = await apiRequest(
         `/api/messages/send/${selectedConversation._id}`,
         {
           method: "POST",
@@ -19,12 +20,12 @@ const useSendMessage = () => {
           body: JSON.stringify({ message }),
         }
       );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
 
       setMessages([...messages, data]);
     } catch (error) {
-      toast.error(error.message);
+      toast.error(
+        error instanceof Error ? error.message : "Could not send message."
+      );
     } finally {
       setLoading(false);
     }

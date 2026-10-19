@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { apiRequest } from "../../Utils/api";
 
 const useGetConversations = () => {
   const [loading, setLoading] = useState(false);
@@ -9,16 +10,14 @@ const useGetConversations = () => {
     const getConversations = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/users");
-
-        const data = await res.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        const data = await apiRequest("/api/users");
         setConversations(data);
       } catch (error) {
-        toast.error(error.message);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not load conversations."
+        );
       } finally {
         setLoading(false);
       }

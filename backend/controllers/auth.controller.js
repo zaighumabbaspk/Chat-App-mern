@@ -4,16 +4,40 @@ import generateTokenAndSetCookie from "../config/generateToken.js";
 
 export const signup = async (req, res) => {
   try {
-    const { fullName, username, password, confirmPassword, gender } = req.body;
+    const { fullName, username, password, confirmPassword, gender } =
+      req.body ?? {};
+
+    if (
+      typeof fullName !== "string" ||
+      typeof username !== "string" ||
+      typeof password !== "string" ||
+      typeof confirmPassword !== "string" ||
+      !fullName.trim() ||
+      !username.trim() ||
+      !password ||
+      !confirmPassword ||
+      !["male", "female"].includes(gender)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Please provide valid signup details" });
+    }
 
     if (password !== confirmPassword) {
       return res.status(400).json({ error: "Passwords don't match" });
     }
 
-    const user = await User.findOne({ username });
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters" });
+    }
+
+    const normalizedUsername = username.trim();
+    const user = await User.findOne({ username: normalizedUsername });
 
     if (user) {
-      return res.status(400).json({ error: "Username already exists" });
+      return res.status(409).json({ error: "Username already exists" });
     }
 
     // HASH PASSWORD HERE
@@ -22,33 +46,32 @@ export const signup = async (req, res) => {
 
     // https://avatar-placeholder.iran.liara.run/
 
-    const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
-    const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+    const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${normalizedUsername}`;
+    const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${normalizedUsername}`;
 
     const newUser = new User({
-      fullName,
-      username,
+      fullName: fullName.trim(),
+      username: normalizedUsername,
       password: hashedPassword,
       gender,
       profilePic: gender === "male" ? boyProfilePic : girlProfilePic,
     });
 
-    if (newUser) {
-      // Generate JWT token here
-      generateTokenAndSetCookie(newUser._id, res);
-      await newUser.save();
+    await newUser.save();
+    generateTokenAndSetCookie(newUser._id, res);
 
-      res.status(201).json({
-        _id: newUser._id,
-        fullName: newUser.fullName,
-        username: newUser.username,
-        profilePic: newUser.profilePic,
-      });
-    } else {
-      res.status(400).json({ error: "Invalid user data" });
-    }
+    res.status(201).json({
+      _id: newUser._id,
+      fullName: newUser.fullName,
+      username: newUser.username,
+      profilePic: newUser.profilePic,
+    });
   } catch (error) {
-    console.log("Error in signup controller", error.message);
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+
+    console.error("Error in signup controller:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
